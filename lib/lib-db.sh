@@ -5,6 +5,7 @@ function db_write_info() {
   local work_circle="$3"
   local file_count="$4"
   local db_file="$5"
+  local purchase_date="$6"
 
   if [ -z "$db_file" ]; then
     echo "no db file provided"
@@ -28,16 +29,29 @@ function db_write_info() {
     return 1
   fi
 
-  sqlite3 -batch -bail "$db_file" <<EOF
-CREATE TABLE IF NOT EXISTS works (
+  # Ensure table exists with full schema (including purchase_date)
+  sqlite3 -batch -bail "$db_file" "CREATE TABLE IF NOT EXISTS works (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     circle TEXT,
-    file_count INTEGER DEFAULT 0
-);
+    file_count INTEGER DEFAULT 0,
+    purchase_date TEXT
+  );"
 
-INSERT OR REPLACE INTO works (id, name, circle, file_count) VALUES ('$work_id', '$work_name', '$work_circle', $file_count);
-EOF
+  # Migrate existing tables that may not yet have the purchase_date column
+  col_exists=$(sqlite3 "$db_file" \
+    "SELECT COUNT(*) FROM pragma_table_info('works') WHERE name='purchase_date';")
+  if [ "$col_exists" = "0" ]; then
+    sqlite3 "$db_file" "ALTER TABLE works ADD COLUMN purchase_date TEXT;"
+  fi
+
+  # Escape single quotes for safe SQL interpolation
+  local safe_name="${work_name//\'/\'\'}"
+  local safe_circle="${work_circle//\'/\'\'}"
+  local safe_date="${purchase_date//\'/\'\'}"
+
+  sqlite3 -batch -bail "$db_file" \
+    "INSERT OR REPLACE INTO works (id, name, circle, file_count, purchase_date) VALUES ('$work_id', '$safe_name', '$safe_circle', $file_count, '$safe_date');"
 
   if [ $? -eq 0 ]; then
     echo "write '$work_id' into '$db_file'。"
@@ -62,7 +76,7 @@ function db-search-id(){
   fi
 
   sqlite3 -batch -bail "$db_file" << EOF
-SELECT id, name, circle, file_count FROM works WHERE id = '$work_id';
+SELECT id, name, circle, file_count, purchase_date FROM works WHERE id = '$work_id';
 EOF
 
   if [ $? -ne 0 ]; then
