@@ -4,9 +4,9 @@ function db_write_info() {
   local work_name="$2"
   local work_circle="$3"
   local file_count="$4"
-  local db_file="$5"
-  local purchase_date="$6"
-
+  local purchase_date="$5"
+  local db_file="$6"
+  
   if [ -z "$db_file" ]; then
     echo "no db file provided"
     return 1

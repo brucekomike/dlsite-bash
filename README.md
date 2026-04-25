@@ -5,6 +5,7 @@ bash scripts to fetch and download contents from dlsite
 - bash
 - jq
 - sqlite3
+- dialog (for tui)
 ## usage
 ### login and fetch info
 - login.sh (copy config.sh from template)

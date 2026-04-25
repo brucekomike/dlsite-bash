@@ -11,6 +11,6 @@ done | while IFS=, read -r id time; do
         echo "Maker: $maker"
         echo "Remote file count: $file_count"
         echo "-----------------------------"
-        db_write_info "$id" "$name" "$maker" "$file_count" "info.db" "$purchase_date"
+        db_write_info "$id" "$name" "$maker" "$file_count" "$purchase_date" "info.db" 
     done
 done

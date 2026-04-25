@@ -12,16 +12,16 @@ if [ ! -f "$DB_FILE" ]; then
     exit 1
 fi
 
-# --- Helper: download a single work ---
 download_work() {
     local id="$1"
     local name="$2"
     local circle="$3"
+    local count="$4"
     dialog --yesno "Download '$name' (ID: $id)?" 10 60
     if [ $? -eq 0 ]; then
         dialog --infobox "Downloading '$name' ($id)..." 5 50
         mkdir -p "downloads/$circle/$name"
-        dlsite-download-single "$id" "downloads/$circle/$name/$id.zip"
+        dlsite-download-multi "$id" "$count" "downloads/$circle/$name"
         if [ $? -eq 0 ]; then
             dialog --msgbox "Download completed: $name" 10 50
         else
@@ -73,7 +73,7 @@ while true; do
             escaped_id="${selected_id//\'/\'\'}"
             IFS='|' read -r id name circle file_count <<< \
                 "$(sqlite3 "$DB_FILE" "SELECT id, name, circle, file_count FROM works WHERE id = '$escaped_id';")"
-            download_work "$id" "$name" "$circle"
+            download_work "$id" "$name" "$circle" "$file_count"
             ;;
 
         # --- Pick a circle, then download one or all works in it ---
@@ -126,12 +126,11 @@ while true; do
                 dialog --yesno "Download all works in '$selected_circle'?" 10 60
                 if [ $? -eq 0 ]; then
                     failed=0
-                    while IFS=$'\t' read -r id name circle; do
+                    while IFS=$'\t' read -r id name circle file_count; do
                         dialog --infobox "Downloading '$name' ($id)..." 5 60
-                        mkdir -p "downloads/$circle/$name"
-                        dlsite-download-single "$id" "downloads/$circle/$name/$id.zip" || ((failed++))
+                        download_work "$id" "$name" "$circle" "$file_count" || ((failed++))
                     done < <(sqlite3 -separator $'\t' "$DB_FILE" \
-                        "SELECT id, name, circle FROM works WHERE circle = '$escaped_circle' ORDER BY id;")
+                        "SELECT id, name, circle, file_count FROM works WHERE circle = '$escaped_circle' ORDER BY id;")
                     if [ "$failed" -eq 0 ]; then
                         dialog --msgbox "All downloads for '$selected_circle' completed." 10 50
                     else
@@ -151,7 +150,7 @@ while true; do
                 escaped_id="${selected_id//\'/\'\'}"
                 IFS='|' read -r id name circle file_count <<< \
                     "$(sqlite3 "$DB_FILE" "SELECT id, name, circle, file_count FROM works WHERE id = '$escaped_id';")"
-                download_work "$id" "$name" "$circle"
+                download_work "$id" "$name" "$circle" "$file_count"
             fi
             ;;
 
@@ -180,7 +179,7 @@ while true; do
             escaped_id="${selected_id//\'/\'\'}"
             IFS='|' read -r id name circle file_count <<< \
                 "$(sqlite3 "$DB_FILE" "SELECT id, name, circle, file_count FROM works WHERE id = '$escaped_id';")"
-            download_work "$id" "$name" "$circle"
+            download_work "$id" "$name" "$circle" "$file_count"
             ;;
 
         # --- Download every work in the database ---
@@ -189,12 +188,11 @@ while true; do
             dialog --yesno "Download all $work_count works?\nThis may take a long time." 10 60
             if [ $? -eq 0 ]; then
                 failed=0
-                while IFS=$'\t' read -r id name circle; do
+                while IFS=$'\t' read -r id name circle file_count; do
                     dialog --infobox "Downloading '$name' ($id)..." 5 60
-                    mkdir -p "downloads/$circle/$name"
-                    dlsite-download-single "$id" "downloads/$circle/$name/$id.zip" || ((failed++))
+                    download_work "$id" "$name" "$circle" "$file_count" || ((failed++))
                 done < <(sqlite3 -separator $'\t' "$DB_FILE" \
-                    "SELECT id, name, circle FROM works ORDER BY id;")
+                    "SELECT id, name, circle, file_count FROM works ORDER BY id;")
                 if [ "$failed" -eq 0 ]; then
                     dialog --msgbox "All $work_count downloads completed successfully." 10 50
                 else
