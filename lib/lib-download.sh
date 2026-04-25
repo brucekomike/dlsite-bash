@@ -8,7 +8,7 @@ function dlsite-get-download-link(){
     echo $RESULT
 }
 
-function dlsite-download-product(){
+function dlsite-download-single(){
     # https://play.dlsite.com/api/v3/download?workno={}
     curl -fSL -X GET \
     -c cookie.txt \

@@ -49,7 +49,7 @@ function dlsite-get-work-info(){
     -c cookie.txt \
     -b cookie.txt \
     "https://www.dlsite.com/maniax/api/=/product.json?workno=$1")
-    OUTPUT=$(echo "$RESULT" | jq -r '"\(.[] | .workno),\(.[] | .work_name),\(.[] | .maker_name),\(.[] | .contents | length)"')
+    OUTPUT=$(echo "$RESULT" | jq -r '"\(.[] | .workno)|\(.[] | .work_name)|\(.[] | .maker_name)|\(.[] | .contents | length)"')
     # id, name, maker, remote file count
     echo -e "$OUTPUT"
 }

@@ -2,7 +2,7 @@
 function db_write_info() {
   local work_id="$1"
   local work_name="$2"
-  local work_intro="$3"
+  local work_circle="$3"
   local file_count="$4"
   local db_file="$5"
 
@@ -12,7 +12,7 @@ function db_write_info() {
   fi
 
   # 检查是否提供了所有必需的参数
-  if [ -z "$work_id" ] || [ -z "$work_name" ] || [ -z "$work_intro" ] || [ -z "$file_count" ]; then
+  if [ -z "$work_id" ] || [ -z "$work_name" ] || [ -z "$work_circle" ] || [ -z "$file_count" ]; then
     echo "missing parameters"
     return 1
   fi
@@ -32,17 +32,41 @@ function db_write_info() {
 CREATE TABLE IF NOT EXISTS works (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
-    intro TEXT,
+    circle TEXT,
     file_count INTEGER DEFAULT 0
 );
 
-INSERT OR REPLACE INTO works (id, name, intro, file_count) VALUES ('$work_id', '$work_name', '$work_intro', $file_count);
+INSERT OR REPLACE INTO works (id, name, circle, file_count) VALUES ('$work_id', '$work_name', '$work_circle', $file_count);
 EOF
 
   if [ $? -eq 0 ]; then
     echo "write '$work_id' into '$db_file'。"
   else
     echo "error writing to database"
+    return 1
+  fi
+}
+
+function db-search-id(){
+  local work_id="$1"
+  local db_file="$2"
+
+  if [ -z "$db_file" ]; then
+    echo "no db file provided"
+    return 1
+  fi
+
+  if [ -z "$work_id" ]; then
+    echo "missing work id"
+    return 1
+  fi
+
+  sqlite3 -batch -bail "$db_file" << EOF
+SELECT id, name, circle, file_count FROM works WHERE id = '$work_id';
+EOF
+
+  if [ $? -ne 0 ]; then
+    echo "error querying database"
     return 1
   fi
 }

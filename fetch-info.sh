@@ -4,7 +4,7 @@ for i in $(tac purchase_list.csv); do
     echo "$i"
 done | while IFS=, read -r id time; do
     echo "Fetching info for $id: purchased at $(date -d $time -I)"
-    dlsite-get-work-info "$id" | while IFS=, read -r id name maker file_count; do
+    dlsite-get-work-info "$id" | while IFS=\| read -r id name maker file_count; do
         echo "ID: $id"
         echo "Name: $name"
         echo "Maker: $maker"
@@ -13,5 +13,3 @@ done | while IFS=, read -r id time; do
         db_write_info "$id" "$name" "$maker" "$file_count" "info.db"
     done
 done
-
-# grep -A 3 "your_pattern" your_file.txt
