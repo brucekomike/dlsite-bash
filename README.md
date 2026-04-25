@@ -8,9 +8,8 @@ bash scripts to fetch and download contents from dlsite
 - dialog (for tui)
 ## usage
 ### login and fetch info
-- login.sh (copy config.sh from template)
-- edit config.sh
-- login.sh
+- copy `config.sh.example` to `config.sh` and set your username
+- run `login.sh` (you will be prompted for your password interactively)
 - fetch-purchased.sh
 - fetch-info.sh
 
