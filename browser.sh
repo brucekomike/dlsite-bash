@@ -17,19 +17,30 @@ download_work() {
     local name="$2"
     local circle="$3"
     local count="$4"
-    dialog --yesno "Download '$name' (ID: $id)?" 10 60
-    if [ $? -eq 0 ]; then
-        dialog --infobox "Downloading '$name' ($id)..." 5 50
-        mkdir -p "downloads/$circle/$name"
-        dlsite-download-multi "$id" "$count" "downloads/$circle/$name"
-        if [ $? -eq 0 ]; then
+    local confirm="${5:-true}"
+
+    if [ "$confirm" = "true" ]; then
+        dialog --yesno "Download '$name' (ID: $id)?" 10 60
+        if [ $? -ne 0 ]; then
+            dialog --msgbox "Download cancelled." 10 30
+            return 0
+        fi
+    fi
+
+    dialog --infobox "Downloading '$name' ($id)..." 5 50
+    mkdir -p "downloads/$circle/$name"
+    dlsite-download-multi "$id" "$count" "downloads/$circle/$name"
+    local rc=$?
+
+    if [ "$confirm" = "true" ]; then
+        if [ $rc -eq 0 ]; then
             dialog --msgbox "Download completed: $name" 10 50
         else
             dialog --msgbox "Download failed: $name" 10 50
         fi
-    else
-        dialog --msgbox "Download cancelled." 10 30
     fi
+
+    return $rc
 }
 
 # --- Main loop ---
@@ -127,8 +138,7 @@ while true; do
                 if [ $? -eq 0 ]; then
                     failed=0
                     while IFS=$'\t' read -r id name circle file_count; do
-                        dialog --infobox "Downloading '$name' ($id)..." 5 60
-                        download_work "$id" "$name" "$circle" "$file_count" || ((failed++))
+                        download_work "$id" "$name" "$circle" "$file_count" "false" || ((failed++))
                     done < <(sqlite3 -separator $'\t' "$DB_FILE" \
                         "SELECT id, name, circle, file_count FROM works WHERE circle = '$escaped_circle' ORDER BY id;")
                     if [ "$failed" -eq 0 ]; then
@@ -189,8 +199,7 @@ while true; do
             if [ $? -eq 0 ]; then
                 failed=0
                 while IFS=$'\t' read -r id name circle file_count; do
-                    dialog --infobox "Downloading '$name' ($id)..." 5 60
-                    download_work "$id" "$name" "$circle" "$file_count" || ((failed++))
+                    download_work "$id" "$name" "$circle" "$file_count" "false" || ((failed++))
                 done < <(sqlite3 -separator $'\t' "$DB_FILE" \
                     "SELECT id, name, circle, file_count FROM works ORDER BY id;")
                 if [ "$failed" -eq 0 ]; then
